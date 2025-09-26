@@ -27,12 +27,8 @@ interface IQuantumHook {
      * @param proposalId The proposal ID
      * @param factory The factory address
      */
-    function registerProposalPool(
-        PoolKey calldata poolKey,
-        uint256 decisionId,
-        uint256 proposalId,
-        address factory
-    ) external;
+    function registerProposalPool(PoolKey calldata poolKey, uint256 decisionId, uint256 proposalId, address factory)
+        external;
 
     /**
      * @notice Execute a quantum trade
@@ -42,12 +38,9 @@ interface IQuantumHook {
      * @param minTokensOut Minimum tokens expected out
      * @return tokensOut Amount of tokens received
      */
-    function executeQuantumTrade(
-        PoolKey calldata poolKey,
-        address trader,
-        uint256 creditsIn,
-        uint256 minTokensOut
-    ) external returns (uint256 tokensOut);
+    function executeQuantumTrade(PoolKey calldata poolKey, address trader, uint256 creditsIn, uint256 minTokensOut)
+        external
+        returns (uint256 tokensOut);
 
     /**
      * @notice Freeze a proposal pool
@@ -90,7 +83,10 @@ interface IQuantumHook {
      * @return creditsReserve Credits reserve
      * @return tokensReserve Tokens reserve
      */
-    function getPoolReserves(PoolKey calldata poolKey) external view returns (uint256 creditsReserve, uint256 tokensReserve);
+    function getPoolReserves(PoolKey calldata poolKey)
+        external
+        view
+        returns (uint256 creditsReserve, uint256 tokensReserve);
 
     /**
      * @notice Calculate tokens out for a given credits in
@@ -98,5 +94,8 @@ interface IQuantumHook {
      * @param creditsIn Amount of credits to trade
      * @return tokensOut Amount of tokens to receive
      */
-    function calculateTokensOut(PoolKey calldata poolKey, uint256 creditsIn) external view returns (uint256 tokensOut);
+    function calculateTokensOut(PoolKey calldata poolKey, uint256 creditsIn)
+        external
+        view
+        returns (uint256 tokensOut);
 }

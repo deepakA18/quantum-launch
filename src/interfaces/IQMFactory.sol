@@ -10,12 +10,7 @@ import {PoolKey} from "v4-core/types/PoolKey.sol";
  */
 interface IQMFactory {
     /// @notice Emitted when a new decision is created
-    event DecisionCreated(
-        uint256 indexed decisionId,
-        address indexed creator,
-        string metadata,
-        uint256 timestamp
-    );
+    event DecisionCreated(uint256 indexed decisionId, address indexed creator, string metadata, uint256 timestamp);
 
     /// @notice Emitted when a new proposal is added to a decision
     event ProposalCreated(
@@ -27,12 +22,7 @@ interface IQMFactory {
     );
 
     /// @notice Emitted when a user deposits into a decision
-    event DepositMade(
-        uint256 indexed decisionId,
-        address indexed user,
-        uint256 amount,
-        uint256 credits
-    );
+    event DepositMade(uint256 indexed decisionId, address indexed user, uint256 amount, uint256 credits);
 
     /// @notice Emitted when a trade is executed
     event TradeExecuted(
@@ -46,10 +36,7 @@ interface IQMFactory {
 
     /// @notice Emitted when a decision is settled
     event DecisionSettled(
-        uint256 indexed decisionId,
-        uint256 indexed winningProposalId,
-        address indexed settler,
-        uint256 totalPayout
+        uint256 indexed decisionId, uint256 indexed winningProposalId, address indexed settler, uint256 totalPayout
     );
 
     /// @notice Structure representing a decision
@@ -93,10 +80,7 @@ interface IQMFactory {
     /// @param decisionId The decision to add the proposal to
     /// @param metadata IPFS hash or JSON metadata for the proposal
     /// @return proposalId The ID of the newly created proposal
-    function createProposal(
-        uint256 decisionId,
-        string calldata metadata
-    ) external returns (uint256 proposalId);
+    function createProposal(uint256 decisionId, string calldata metadata) external returns (uint256 proposalId);
 
     /// @notice Deposit funds and receive credits for a decision
     /// @param decisionId The decision to deposit into
@@ -108,12 +92,7 @@ interface IQMFactory {
     /// @param proposalId The proposal to trade in
     /// @param creditsIn Amount of credits to trade
     /// @param minTokensOut Minimum tokens expected (slippage protection)
-    function trade(
-        uint256 decisionId,
-        uint256 proposalId,
-        uint256 creditsIn,
-        uint256 minTokensOut
-    ) external;
+    function trade(uint256 decisionId, uint256 proposalId, uint256 creditsIn, uint256 minTokensOut) external;
 
     /// @notice Settle a decision by selecting the winning proposal
     /// @param decisionId The decision to settle
@@ -133,40 +112,33 @@ interface IQMFactory {
     /// @param decisionId The decision ID
     /// @param proposalId The proposal ID
     /// @return proposal The proposal struct
-    function getProposal(
-        uint256 decisionId,
-        uint256 proposalId
-    ) external view returns (Proposal memory proposal);
+    function getProposal(uint256 decisionId, uint256 proposalId) external view returns (Proposal memory proposal);
 
     /// @notice Get user's position in a decision
     /// @param decisionId The decision ID
     /// @param user The user address
     /// @return totalCredits Total credits available
     /// @return usedCredits Credits already used in trades
-    function getUserPosition(
-        uint256 decisionId,
-        address user
-    ) external view returns (uint256 totalCredits, uint256 usedCredits);
+    function getUserPosition(uint256 decisionId, address user)
+        external
+        view
+        returns (uint256 totalCredits, uint256 usedCredits);
 
     /// @notice Get user's token balance for a specific proposal
     /// @param decisionId The decision ID
     /// @param proposalId The proposal ID
     /// @param user The user address
     /// @return tokens Number of proposal tokens held
-    function getUserProposalTokens(
-        uint256 decisionId,
-        uint256 proposalId,
-        address user
-    ) external view returns (uint256 tokens);
+    function getUserProposalTokens(uint256 decisionId, uint256 proposalId, address user)
+        external
+        view
+        returns (uint256 tokens);
 
     /// @notice Get the current price for a proposal
     /// @param decisionId The decision ID
     /// @param proposalId The proposal ID
     /// @return price Current price of the proposal token
-    function getProposalPrice(
-        uint256 decisionId,
-        uint256 proposalId
-    ) external view returns (uint256 price);
+    function getProposalPrice(uint256 decisionId, uint256 proposalId) external view returns (uint256 price);
 
     /// @notice Check if a decision is settled
     /// @param decisionId The decision ID

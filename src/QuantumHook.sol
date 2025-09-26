@@ -35,13 +35,13 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
 
     /// @notice Mapping from pool ID to pool metadata
     mapping(PoolId => PoolMetadata) public poolMetadata;
-    
+
     /// @notice Mapping from factory address to authorization status
     mapping(address => bool) public authorizedFactories;
-    
+
     /// @notice Mapping to track credits reserves per pool
     mapping(PoolId => uint256) public creditsReserves;
-    
+
     /// @notice Mapping to track token reserves per pool
     mapping(PoolId => uint256) public tokensReserves;
 
@@ -52,7 +52,9 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
     uint256 public constant INITIAL_VIRTUAL_LIQUIDITY = 1000 * 1e18;
 
     /// @notice Events
-    event ProposalPoolRegistered(uint256 indexed decisionId, uint256 indexed proposalId, PoolKey poolKey, address factory);
+    event ProposalPoolRegistered(
+        uint256 indexed decisionId, uint256 indexed proposalId, PoolKey poolKey, address factory
+    );
     event QuantumTradeExecuted(PoolKey indexed poolKey, address indexed trader, uint256 creditsIn, uint256 tokensOut);
     event ProposalPoolFrozen(uint256 indexed decisionId, uint256 indexed proposalId, bool isWinner);
 
@@ -92,16 +94,14 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
     /**
      * @inheritdoc IQuantumHook
      */
-    function registerProposalPool(
-        PoolKey calldata poolKey,
-        uint256 decisionId,
-        uint256 proposalId,
-        address factory
-    ) external override {
+    function registerProposalPool(PoolKey calldata poolKey, uint256 decisionId, uint256 proposalId, address factory)
+        external
+        override
+    {
         require(authorizedFactories[msg.sender], "QuantumHook: unauthorized factory");
-        
+
         PoolId poolId = poolKey.toId();
-        
+
         poolMetadata[poolId] = PoolMetadata({
             decisionId: decisionId,
             proposalId: proposalId,
@@ -122,41 +122,32 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
     /**
      * @inheritdoc IQuantumHook
      */
-    function executeQuantumTrade(
-        PoolKey calldata poolKey,
-        address trader,
-        uint256 creditsIn,
-        uint256 minTokensOut
-    ) external override nonReentrant returns (uint256 tokensOut) {
+    function executeQuantumTrade(PoolKey calldata poolKey, address trader, uint256 creditsIn, uint256 minTokensOut)
+        external
+        override
+        nonReentrant
+        returns (uint256 tokensOut)
+    {
         PoolId poolId = poolKey.toId();
         PoolMetadata storage metadata = poolMetadata[poolId];
-        
+
         require(metadata.isActive && !metadata.isFrozen, "QuantumHook: pool not active");
         require(msg.sender == metadata.factory, "QuantumHook: unauthorized caller");
 
         // Calculate tokens out using current reserves
-        tokensOut = MathUtils.calculateTokensOut(
-            creditsIn,
-            creditsReserves[poolId],
-            tokensReserves[poolId]
-        );
+        tokensOut = MathUtils.calculateTokensOut(creditsIn, creditsReserves[poolId], tokensReserves[poolId]);
 
         require(tokensOut >= minTokensOut, "QuantumHook: slippage exceeded");
 
         // Update reserves
         creditsReserves[poolId] = creditsReserves[poolId].safeAdd(creditsIn);
         tokensReserves[poolId] = tokensReserves[poolId].safeSub(tokensOut);
-        
+
         // Update metadata
         metadata.totalSupply += tokensOut;
-        metadata.currentPrice = MathUtils.calculatePriceFromReserves(
-            creditsReserves[poolId],
-            tokensReserves[poolId]
-        );
+        metadata.currentPrice = MathUtils.calculatePriceFromReserves(creditsReserves[poolId], tokensReserves[poolId]);
 
-        emit QuantumTradeExecuted(
-            poolKey, trader, creditsIn, tokensOut
-        );
+        emit QuantumTradeExecuted(poolKey, trader, creditsIn, tokensOut);
     }
 
     /**
@@ -165,7 +156,7 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
     function freezeProposalPool(PoolKey calldata poolKey, bool isWinner) external override {
         PoolId poolId = poolKey.toId();
         PoolMetadata storage metadata = poolMetadata[poolId];
-        
+
         require(msg.sender == metadata.factory, "QuantumHook: unauthorized caller");
         require(metadata.isActive, "QuantumHook: pool already frozen");
 
@@ -178,21 +169,18 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
     /**
      * @notice Hook called after pool initialization
      */
-    function afterInitialize(
-        address,
-        PoolKey calldata poolKey,
-        uint160,
-        int24,
-        bytes calldata
-    ) external returns (bytes4) {
+    function afterInitialize(address, PoolKey calldata poolKey, uint160, int24, bytes calldata)
+        external
+        returns (bytes4)
+    {
         // Pool is initialized, ready for trades
         PoolId poolId = poolKey.toId();
-        
+
         // Add initial liquidity to the pool if it's a registered proposal pool
         if (poolMetadata[poolId].factory != address(0)) {
             _addInitialLiquidity(poolKey);
         }
-        
+
         return BaseTestHooks.afterInitialize.selector;
     }
 
@@ -234,17 +222,15 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
     /**
      * @inheritdoc IQuantumHook
      */
-    function calculateTokensOut(
-        PoolKey calldata poolKey,
-        uint256 creditsIn
-    ) external view override returns (uint256 tokensOut) {
+    function calculateTokensOut(PoolKey calldata poolKey, uint256 creditsIn)
+        external
+        view
+        override
+        returns (uint256 tokensOut)
+    {
         PoolId poolId = poolKey.toId();
-        
-        return MathUtils.calculateTokensOut(
-            creditsIn,
-            creditsReserves[poolId],
-            tokensReserves[poolId]
-        );
+
+        return MathUtils.calculateTokensOut(creditsIn, creditsReserves[poolId], tokensReserves[poolId]);
     }
 
     /**
@@ -286,9 +272,11 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
      * @return creditsReserve Current credits reserve
      * @return tokensReserve Current tokens reserve
      */
-    function getPoolReserves(
-        PoolKey calldata poolKey
-    ) external view returns (uint256 creditsReserve, uint256 tokensReserve) {
+    function getPoolReserves(PoolKey calldata poolKey)
+        external
+        view
+        returns (uint256 creditsReserve, uint256 tokensReserve)
+    {
         PoolId poolId = poolKey.toId();
         return (creditsReserves[poolId], tokensReserves[poolId]);
     }
@@ -299,17 +287,14 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
      */
     function _addInitialLiquidity(PoolKey memory poolKey) internal {
         PoolId poolId = poolKey.toId();
-        
+
         // Get current pool state
         (uint160 sqrtPriceX96,,,) = poolManager.getSlot0(poolId);
-        
+
         // Calculate liquidity amount
-        uint128 liquidity = MathUtils.getLiquidityForAmounts(
-            INITIAL_VIRTUAL_LIQUIDITY,
-            INITIAL_VIRTUAL_LIQUIDITY,
-            sqrtPriceX96
-        );
-        
+        uint128 liquidity =
+            MathUtils.getLiquidityForAmounts(INITIAL_VIRTUAL_LIQUIDITY, INITIAL_VIRTUAL_LIQUIDITY, sqrtPriceX96);
+
         totalLiquidity[poolId] = liquidity;
     }
 
@@ -319,20 +304,16 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
      * @param newCreditsReserve New credits reserve
      * @param newTokensReserve New tokens reserve
      */
-    function emergencyUpdateReserves(
-        PoolKey calldata poolKey,
-        uint256 newCreditsReserve,
-        uint256 newTokensReserve
-    ) external onlyOwner {
+    function emergencyUpdateReserves(PoolKey calldata poolKey, uint256 newCreditsReserve, uint256 newTokensReserve)
+        external
+        onlyOwner
+    {
         PoolId poolId = poolKey.toId();
         creditsReserves[poolId] = newCreditsReserve;
         tokensReserves[poolId] = newTokensReserve;
-        
+
         // Update price
-        poolMetadata[poolId].currentPrice = MathUtils.calculatePriceFromReserves(
-            newCreditsReserve,
-            newTokensReserve
-        );
+        poolMetadata[poolId].currentPrice = MathUtils.calculatePriceFromReserves(newCreditsReserve, newTokensReserve);
     }
 
     /**

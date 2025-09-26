@@ -29,19 +29,19 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
 
     /// @notice The deposit token (e.g., USDC, WETH)
     IERC20 public immutable depositToken;
-    
+
     /// @notice Uniswap v4 Pool Manager
     IPoolManager public immutable poolManager;
-    
+
     /// @notice Quantum Hook contract
     IQuantumHook public immutable quantumHook;
 
     /// @notice Counter for decision IDs
     uint256 public decisionCounter;
-    
+
     /// @notice Initial price for new proposals (1 credit per token)
     uint256 public constant INITIAL_PRICE = 1e18;
-    
+
     /// @notice Refund rate for losing positions (50% of used credits)
     uint256 public constant REFUND_RATE = 5e17; // 0.5 * 1e18
 
@@ -53,13 +53,13 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
 
     /// @notice Mapping of decision ID to Decision struct
     mapping(uint256 => Decision) public decisions;
-    
+
     /// @notice Mapping of decision ID to proposal ID to Proposal struct
     mapping(uint256 => mapping(uint256 => Proposal)) public proposals;
-    
+
     /// @notice Mapping of decision ID to user address to UserPosition
     mapping(uint256 => mapping(address => UserPosition)) public userPositions;
-    
+
     /// @notice Mapping to track admin addresses
     mapping(address => bool) public admins;
 
@@ -83,22 +83,18 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
 
     modifier proposalExists(uint256 decisionId, uint256 proposalId) {
         require(
-            proposalId > 0 && proposalId <= decisions[decisionId].proposalCount,
-            "QMFactory: proposal does not exist"
+            proposalId > 0 && proposalId <= decisions[decisionId].proposalCount, "QMFactory: proposal does not exist"
         );
         _;
     }
 
-    constructor(
-        address _depositToken,
-        address _poolManager,
-        address _quantumHook,
-        address _initialOwner
-    ) Ownable(_initialOwner) {
+    constructor(address _depositToken, address _poolManager, address _quantumHook, address _initialOwner)
+        Ownable(_initialOwner)
+    {
         depositToken = IERC20(_depositToken);
         poolManager = IPoolManager(_poolManager);
         quantumHook = IQuantumHook(_quantumHook);
-        
+
         // Set initial owner as admin
         admins[_initialOwner] = true;
     }
@@ -117,7 +113,7 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
      */
     function createDecision(string calldata metadata) external override returns (uint256 decisionId) {
         decisionId = ++decisionCounter;
-        
+
         decisions[decisionId] = Decision({
             id: decisionId,
             creator: msg.sender,
@@ -136,10 +132,13 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
     /**
      * @inheritdoc IQMFactory
      */
-    function createProposal(
-        uint256 decisionId,
-        string calldata metadata
-    ) external override decisionExists(decisionId) decisionNotSettled(decisionId) returns (uint256 proposalId) {
+    function createProposal(uint256 decisionId, string calldata metadata)
+        external
+        override
+        decisionExists(decisionId)
+        decisionNotSettled(decisionId)
+        returns (uint256 proposalId)
+    {
         Decision storage decision = decisions[decisionId];
         proposalId = ++decision.proposalCount;
 
@@ -147,7 +146,7 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
         // Currency0 is always the smaller address for proper ordering
         Currency currency0 = Currency.wrap(address(depositToken));
         Currency currency1 = Currency.wrap(address(uint160(uint256(keccak256(abi.encode(decisionId, proposalId))))));
-        
+
         // Ensure proper ordering (currency0 < currency1)
         if (Currency.unwrap(currency0) > Currency.unwrap(currency1)) {
             (currency0, currency1) = (currency1, currency0);
@@ -189,10 +188,13 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
     /**
      * @inheritdoc IQMFactory
      */
-    function deposit(
-        uint256 decisionId,
-        uint256 amount
-    ) external override nonReentrant decisionExists(decisionId) decisionNotSettled(decisionId) {
+    function deposit(uint256 decisionId, uint256 amount)
+        external
+        override
+        nonReentrant
+        decisionExists(decisionId)
+        decisionNotSettled(decisionId)
+    {
         require(amount > 0, "QMFactory: amount must be greater than 0");
 
         // Transfer deposit token from user
@@ -216,19 +218,18 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
     /**
      * @inheritdoc IQMFactory
      */
-    function trade(
-        uint256 decisionId,
-        uint256 proposalId,
-        uint256 creditsIn,
-        uint256 minTokensOut
-    ) external override nonReentrant decisionExists(decisionId) proposalExists(decisionId, proposalId) decisionNotSettled(decisionId) {
+    function trade(uint256 decisionId, uint256 proposalId, uint256 creditsIn, uint256 minTokensOut)
+        external
+        override
+        nonReentrant
+        decisionExists(decisionId)
+        proposalExists(decisionId, proposalId)
+        decisionNotSettled(decisionId)
+    {
         require(creditsIn > 0, "QMFactory: credits must be greater than 0");
 
         UserPosition storage position = userPositions[decisionId][msg.sender];
-        require(
-            position.totalCredits >= position.usedCredits + creditsIn,
-            "QMFactory: insufficient credits"
-        );
+        require(position.totalCredits >= position.usedCredits + creditsIn, "QMFactory: insufficient credits");
 
         Proposal storage proposal = proposals[decisionId][proposalId];
         require(proposal.isActive, "QMFactory: proposal not active");
@@ -250,10 +251,14 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
     /**
      * @inheritdoc IQMFactory
      */
-    function settle(
-        uint256 decisionId,
-        uint256 winningProposalId
-    ) external override onlyAdmin decisionExists(decisionId) proposalExists(decisionId, winningProposalId) decisionNotSettled(decisionId) {
+    function settle(uint256 decisionId, uint256 winningProposalId)
+        external
+        override
+        onlyAdmin
+        decisionExists(decisionId)
+        proposalExists(decisionId, winningProposalId)
+        decisionNotSettled(decisionId)
+    {
         Decision storage decision = decisions[decisionId];
         decision.isSettled = true;
         decision.winningProposal = winningProposalId;
@@ -262,7 +267,7 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
         for (uint256 i = 1; i <= decision.proposalCount; i++) {
             Proposal storage proposal = proposals[decisionId][i];
             proposal.isActive = false;
-            
+
             bool isWinner = (i == winningProposalId);
             quantumHook.freezeProposalPool(proposal.poolKey, isWinner);
         }
@@ -286,20 +291,12 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
         if (winningTokens > 0) {
             // Calculate winner payout
             uint256 totalWinningTokens = getCurrentProposalSupply(decisionId, decision.winningProposal);
-            uint256 winnerPayout = MathUtils.calculatePayout(
-                winningTokens,
-                totalWinningTokens,
-                decision.totalDeposits
-            );
+            uint256 winnerPayout = MathUtils.calculatePayout(winningTokens, totalWinningTokens, decision.totalDeposits);
             totalPayout += winnerPayout;
         }
 
         // Calculate refund for unused/losing credits
-        uint256 refund = MathUtils.calculateRefund(
-            position.totalCredits,
-            position.usedCredits,
-            REFUND_RATE
-        );
+        uint256 refund = MathUtils.calculateRefund(position.totalCredits, position.usedCredits, REFUND_RATE);
         totalPayout += refund;
 
         // Reset user position to prevent double claiming
@@ -325,20 +322,24 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
     /**
      * @inheritdoc IQMFactory
      */
-    function getProposal(
-        uint256 decisionId,
-        uint256 proposalId
-    ) external view override returns (Proposal memory proposal) {
+    function getProposal(uint256 decisionId, uint256 proposalId)
+        external
+        view
+        override
+        returns (Proposal memory proposal)
+    {
         return proposals[decisionId][proposalId];
     }
 
     /**
      * @inheritdoc IQMFactory
      */
-    function getUserPosition(
-        uint256 decisionId,
-        address user
-    ) external view override returns (uint256 totalCredits, uint256 usedCredits) {
+    function getUserPosition(uint256 decisionId, address user)
+        external
+        view
+        override
+        returns (uint256 totalCredits, uint256 usedCredits)
+    {
         UserPosition storage position = userPositions[decisionId][user];
         return (position.totalCredits, position.usedCredits);
     }
@@ -346,21 +347,19 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
     /**
      * @inheritdoc IQMFactory
      */
-    function getUserProposalTokens(
-        uint256 decisionId,
-        uint256 proposalId,
-        address user
-    ) external view override returns (uint256 tokens) {
+    function getUserProposalTokens(uint256 decisionId, uint256 proposalId, address user)
+        external
+        view
+        override
+        returns (uint256 tokens)
+    {
         return userPositions[decisionId][user].proposalTokens[proposalId];
     }
 
     /**
      * @inheritdoc IQMFactory
      */
-    function getProposalPrice(
-        uint256 decisionId,
-        uint256 proposalId
-    ) external view override returns (uint256 price) {
+    function getProposalPrice(uint256 decisionId, uint256 proposalId) external view override returns (uint256 price) {
         return proposals[decisionId][proposalId].currentPrice;
     }
 
@@ -378,10 +377,7 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
      * @param proposalId The proposal ID
      * @return supply Current token supply
      */
-    function getCurrentProposalSupply(
-        uint256 decisionId,
-        uint256 proposalId
-    ) public view returns (uint256 supply) {
+    function getCurrentProposalSupply(uint256 decisionId, uint256 proposalId) public view returns (uint256 supply) {
         Proposal storage proposal = proposals[decisionId][proposalId];
         IQuantumHook.PoolMetadata memory metadata = quantumHook.getPoolMetadata(proposal.poolKey);
         return metadata.totalSupply;
@@ -393,10 +389,7 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
      * @param proposalId The proposal ID
      * @return poolId The Uniswap v4 pool ID
      */
-    function getProposalPoolId(
-        uint256 decisionId,
-        uint256 proposalId
-    ) external view returns (PoolId poolId) {
+    function getProposalPoolId(uint256 decisionId, uint256 proposalId) external view returns (PoolId poolId) {
         return proposalPools[decisionId][proposalId];
     }
 
@@ -419,21 +412,22 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
      * @return creditsReserve Current credits in pool
      * @return tokensReserve Current tokens in pool
      */
-    function getProposalDetails(
-        uint256 decisionId,
-        uint256 proposalId
-    ) external view returns (
-        uint256 totalSupply,
-        uint256 currentPrice,
-        bool isActive,
-        uint256 creditsReserve,
-        uint256 tokensReserve
-    ) {
+    function getProposalDetails(uint256 decisionId, uint256 proposalId)
+        external
+        view
+        returns (
+            uint256 totalSupply,
+            uint256 currentPrice,
+            bool isActive,
+            uint256 creditsReserve,
+            uint256 tokensReserve
+        )
+    {
         Proposal storage proposal = proposals[decisionId][proposalId];
         IQuantumHook.PoolMetadata memory metadata = quantumHook.getPoolMetadata(proposal.poolKey);
-        
+
         (creditsReserve, tokensReserve) = quantumHook.getPoolReserves(proposal.poolKey);
-        
+
         return (
             metadata.totalSupply,
             metadata.currentPrice,
@@ -450,11 +444,11 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
      * @param creditsIn Amount of credits to trade
      * @return tokensOut Expected tokens to receive
      */
-    function calculateTokensOut(
-        uint256 decisionId,
-        uint256 proposalId,
-        uint256 creditsIn
-    ) external view returns (uint256 tokensOut) {
+    function calculateTokensOut(uint256 decisionId, uint256 proposalId, uint256 creditsIn)
+        external
+        view
+        returns (uint256 tokensOut)
+    {
         Proposal storage proposal = proposals[decisionId][proposalId];
         return quantumHook.calculateTokensOut(proposal.poolKey, creditsIn);
     }

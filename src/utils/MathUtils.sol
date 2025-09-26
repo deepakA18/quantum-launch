@@ -12,15 +12,15 @@ import "v4-core/libraries/FixedPoint96.sol";
 library MathUtils {
     /// @notice Scale factor for fixed-point arithmetic (18 decimals)
     uint256 public constant SCALE = 1e18;
-    
+
     /// @notice Maximum price to prevent overflow
     uint256 public constant MAX_PRICE = type(uint128).max;
-    
+
     /// @notice Minimum price to prevent division by zero
     uint256 public constant MIN_PRICE = 1;
 
     /// @notice Q96 fixed point for Uniswap v4 compatibility
-    uint256 public constant Q96 = 2**96;
+    uint256 public constant Q96 = 2 ** 96;
 
     error MathUtils_InvalidPrice();
     error MathUtils_InsufficientLiquidity();
@@ -35,23 +35,23 @@ library MathUtils {
      * @param tokensReserve Current tokens reserve
      * @return tokensOut Amount of tokens to receive
      */
-    function calculateTokensOut(
-        uint256 creditsIn,
-        uint256 creditsReserve,
-        uint256 tokensReserve
-    ) internal pure returns (uint256 tokensOut) {
+    function calculateTokensOut(uint256 creditsIn, uint256 creditsReserve, uint256 tokensReserve)
+        internal
+        pure
+        returns (uint256 tokensOut)
+    {
         if (creditsReserve == 0 || tokensReserve == 0) {
             revert MathUtils_InsufficientLiquidity();
         }
-        
+
         // Using Uniswap's FullMath for precision
         uint256 numerator = FullMath.mulDiv(creditsIn, tokensReserve, 1);
         uint256 denominator = creditsReserve + creditsIn;
-        
+
         if (denominator == 0) revert MathUtils_InsufficientLiquidity();
-        
+
         tokensOut = numerator / denominator;
-        
+
         if (tokensOut >= tokensReserve) {
             revert MathUtils_InsufficientLiquidity();
         }
@@ -63,17 +63,18 @@ library MathUtils {
      * @param tokensReserve Current tokens reserve
      * @return price Current price (credits per token)
      */
-    function calculatePriceFromReserves(
-        uint256 creditsReserve,
-        uint256 tokensReserve
-    ) internal pure returns (uint256 price) {
+    function calculatePriceFromReserves(uint256 creditsReserve, uint256 tokensReserve)
+        internal
+        pure
+        returns (uint256 price)
+    {
         if (tokensReserve == 0) {
             return MIN_PRICE;
         }
-        
+
         // Use FullMath for precise calculation
         price = FullMath.mulDiv(creditsReserve, SCALE, tokensReserve);
-        
+
         if (price > MAX_PRICE) price = MAX_PRICE;
         if (price < MIN_PRICE) price = MIN_PRICE;
     }
@@ -86,13 +87,13 @@ library MathUtils {
     function priceToSqrtPriceX96(uint256 price) internal pure returns (uint160 sqrtPriceX96) {
         // Calculate sqrt(price) * 2^96
         // price is in 18 decimals, so we need to adjust
-        
+
         // First get the square root of the price
         uint256 sqrtPrice = sqrt(price);
-        
+
         // Then scale to X96 format
         sqrtPriceX96 = uint160(FullMath.mulDiv(sqrtPrice, Q96, sqrt(SCALE)));
-        
+
         // Ensure it's within valid range
         require(sqrtPriceX96 >= 4295128739, "Price too low");
         require(sqrtPriceX96 <= 1461446703485210103287273052203988822378723970342, "Price too high");
@@ -116,11 +117,11 @@ library MathUtils {
      */
     function sqrt(uint256 x) internal pure returns (uint256 result) {
         if (x == 0) return 0;
-        
+
         // Initial guess
         result = x;
         uint256 k = (x >> 1) + 1;
-        
+
         // Babylonian method
         while (k < result) {
             result = k;
@@ -135,15 +136,15 @@ library MathUtils {
      * @param maxSlippageBps Maximum slippage in basis points (100 = 1%)
      * @return isAcceptable Whether slippage is acceptable
      */
-    function checkSlippage(
-        uint256 expectedAmount,
-        uint256 actualAmount,
-        uint256 maxSlippageBps
-    ) internal pure returns (bool isAcceptable) {
+    function checkSlippage(uint256 expectedAmount, uint256 actualAmount, uint256 maxSlippageBps)
+        internal
+        pure
+        returns (bool isAcceptable)
+    {
         if (actualAmount >= expectedAmount) {
             return true; // No slippage or positive slippage
         }
-        
+
         uint256 slippage = FullMath.mulDiv(expectedAmount - actualAmount, 10000, expectedAmount);
         return slippage <= maxSlippageBps;
     }
@@ -156,15 +157,15 @@ library MathUtils {
      * @param totalPayout Total amount available for payout
      * @return payout User's share of the payout
      */
-    function calculatePayout(
-        uint256 userTokens,
-        uint256 totalWinningTokens,
-        uint256 totalPayout
-    ) internal pure returns (uint256 payout) {
+    function calculatePayout(uint256 userTokens, uint256 totalWinningTokens, uint256 totalPayout)
+        internal
+        pure
+        returns (uint256 payout)
+    {
         if (totalWinningTokens == 0) {
             return 0;
         }
-        
+
         payout = FullMath.mulDiv(userTokens, totalPayout, totalWinningTokens);
     }
 
@@ -176,13 +177,13 @@ library MathUtils {
      * @param refundRate Refund rate for used credits (scaled by SCALE)
      * @return refund Total refund amount
      */
-    function calculateRefund(
-        uint256 totalCredits,
-        uint256 usedCredits,
-        uint256 refundRate
-    ) internal pure returns (uint256 refund) {
+    function calculateRefund(uint256 totalCredits, uint256 usedCredits, uint256 refundRate)
+        internal
+        pure
+        returns (uint256 refund)
+    {
         if (usedCredits > totalCredits) revert MathUtils_Overflow();
-        
+
         uint256 unusedCredits = totalCredits - usedCredits;
         uint256 usedCreditsRefund = FullMath.mulDiv(usedCredits, refundRate, SCALE);
         refund = unusedCredits + usedCreditsRefund;
@@ -195,18 +196,18 @@ library MathUtils {
      * @param sqrtPriceX96 Current sqrt price
      * @return liquidity Amount of liquidity
      */
-    function getLiquidityForAmounts(
-        uint256 amount0,
-        uint256 amount1,
-        uint160 sqrtPriceX96
-    ) internal pure returns (uint128 liquidity) {
+    function getLiquidityForAmounts(uint256 amount0, uint256 amount1, uint160 sqrtPriceX96)
+        internal
+        pure
+        returns (uint128 liquidity)
+    {
         if (sqrtPriceX96 == 0) return 0;
-        
+
         // Simplified liquidity calculation
         // In production, you'd use Uniswap's LiquidityAmounts library
         uint256 liquidity0 = FullMath.mulDiv(amount0, sqrtPriceX96, Q96);
         uint256 liquidity1 = FullMath.mulDiv(amount1, Q96, sqrtPriceX96);
-        
+
         liquidity = uint128(liquidity0 < liquidity1 ? liquidity0 : liquidity1);
     }
 
@@ -228,14 +229,15 @@ library MathUtils {
     }
 
     // DEPRECATED FUNCTIONS - Remove these mock/simplified functions
-    
+
     /**
      * @dev DEPRECATED: Use calculateTokensOut instead
      */
-    function calculateLinearTokensOut(
-        uint256 creditsIn,
-        uint256 currentPrice
-    ) internal pure returns (uint256 tokensOut) {
+    function calculateLinearTokensOut(uint256 creditsIn, uint256 currentPrice)
+        internal
+        pure
+        returns (uint256 tokensOut)
+    {
         // Redirect to real implementation
         // This maintains backward compatibility while using real math
         return FullMath.mulDiv(creditsIn, SCALE, currentPrice);
@@ -244,11 +246,11 @@ library MathUtils {
     /**
      * @dev DEPRECATED: Use calculateTokensOut instead
      */
-    function calculateConstantProductTokensOut(
-        uint256 creditsIn,
-        uint256 creditsReserve,
-        uint256 tokensReserve
-    ) internal pure returns (uint256 tokensOut) {
+    function calculateConstantProductTokensOut(uint256 creditsIn, uint256 creditsReserve, uint256 tokensReserve)
+        internal
+        pure
+        returns (uint256 tokensOut)
+    {
         // Redirect to real implementation
         return calculateTokensOut(creditsIn, creditsReserve, tokensReserve);
     }
