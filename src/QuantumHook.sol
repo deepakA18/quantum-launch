@@ -192,7 +192,7 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
         PoolKey calldata poolKey,
         IPoolManager.SwapParams calldata params,
         bytes calldata hookData
-    ) external override returns (bytes4, BeforeSwapDelta, uint24) {
+    ) external view override returns (bytes4, BeforeSwapDelta, uint24) {
         PoolId poolId = poolKey.toId();
         PoolMetadata storage metadata = poolMetadata[poolId];
 
@@ -214,7 +214,7 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
         IPoolManager.SwapParams calldata params,
         BalanceDelta delta,
         bytes calldata hookData
-    ) external override returns (bytes4, int128) {
+    ) external pure override returns (bytes4, int128) {
         // Update our internal tracking after successful swaps
         return (BaseTestHooks.afterSwap.selector, 0);
     }
