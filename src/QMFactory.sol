@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {IPoolManager} from "v4-core/interfaces/IPoolManager.sol";
 import {PoolKey} from "v4-core/types/PoolKey.sol";
@@ -12,9 +12,9 @@ import {Currency, CurrencyLibrary} from "v4-core/types/Currency.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/types/PoolId.sol";
 import {IHooks} from "v4-core/interfaces/IHooks.sol";
 
-import "./interfaces/IQMFactory.sol";
-import "./interfaces/IQuantumHook.sol";
-import "./utils/MathUtils.sol";
+import {IQMFactory} from "./interfaces/IQMFactory.sol";
+import {IQuantumHook} from "./interfaces/IQuantumHook.sol";
+import {MathUtils} from "./utils/MathUtils.sol";
 
 /**
  * @title QMFactory
@@ -28,13 +28,13 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
     using MathUtils for uint256;
 
     /// @notice The deposit token (e.g., USDC, WETH)
-    IERC20 public immutable depositToken;
+    IERC20 public immutable DEPOSIT_TOKEN;
 
     /// @notice Uniswap v4 Pool Manager
-    IPoolManager public immutable poolManager;
+    IPoolManager public immutable POOL_MANAGER;
 
     /// @notice Quantum Hook contract
-    IQuantumHook public immutable quantumHook;
+    IQuantumHook public immutable QUANTUM_HOOK;
 
     /// @notice Counter for decision IDs
     uint256 public decisionCounter;
@@ -67,33 +67,49 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
     mapping(uint256 => mapping(uint256 => PoolId)) public proposalPools;
 
     modifier onlyAdmin() {
-        require(admins[msg.sender] || msg.sender == owner(), "QMFactory: not admin");
+        _onlyAdmin();
         _;
+    }
+
+    function _onlyAdmin() internal {
+        require(admins[msg.sender] || msg.sender == owner(), "QMFactory: not admin");
     }
 
     modifier decisionExists(uint256 decisionId) {
-        require(decisionId > 0 && decisionId <= decisionCounter, "QMFactory: decision does not exist");
+        _decisionExists(decisionId);
         _;
+    }
+
+    function _decisionExists(uint256 decisionId) internal {
+        require(decisionId > 0 && decisionId <= decisionCounter, "QMFactory: decision does not exist");
     }
 
     modifier decisionNotSettled(uint256 decisionId) {
-        require(!decisions[decisionId].isSettled, "QMFactory: decision already settled");
+        _decisionNotSettled(decisionId);
         _;
     }
 
+    function _decisionNotSettled(uint256 decisionId) internal {
+        require(!decisions[decisionId].isSettled, "QMFactory: decision already settled");
+    }
+
     modifier proposalExists(uint256 decisionId, uint256 proposalId) {
+        _proposalExists(decisionId, proposalId);
+        _;
+    }
+
+    function _proposalExists(uint256 decisionId, uint256 proposalId) internal {
         require(
             proposalId > 0 && proposalId <= decisions[decisionId].proposalCount, "QMFactory: proposal does not exist"
         );
-        _;
     }
 
     constructor(address _depositToken, address _poolManager, address _quantumHook, address _initialOwner)
         Ownable(_initialOwner)
     {
-        depositToken = IERC20(_depositToken);
-        poolManager = IPoolManager(_poolManager);
-        quantumHook = IQuantumHook(_quantumHook);
+        DEPOSIT_TOKEN = IERC20(_depositToken);
+        POOL_MANAGER = IPoolManager(_poolManager);
+        QUANTUM_HOOK = IQuantumHook(_quantumHook);
 
         // Set initial owner as admin
         admins[_initialOwner] = true;
@@ -144,7 +160,7 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
 
         // Create PoolKey for this proposal
         // Currency0 is always the smaller address for proper ordering
-        Currency currency0 = Currency.wrap(address(depositToken));
+        Currency currency0 = Currency.wrap(address(DEPOSIT_TOKEN));
         Currency currency1 = Currency.wrap(address(uint160(uint256(keccak256(abi.encode(decisionId, proposalId))))));
 
         // Ensure proper ordering (currency0 < currency1)
@@ -157,7 +173,7 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
             currency1: currency1,
             fee: POOL_FEE,
             tickSpacing: TICK_SPACING,
-            hooks: IHooks(address(quantumHook))
+            hooks: IHooks(address(QUANTUM_HOOK))
         });
 
         // Get pool ID
@@ -165,16 +181,16 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
         proposalPools[decisionId][proposalId] = poolId;
 
         // Register the pool with our hook first
-        quantumHook.registerProposalPool(poolKey, decisionId, proposalId, address(this));
+        QUANTUM_HOOK.registerProposalPool(poolKey, decisionId, proposalId, address(this));
 
         // Initialize the pool in Uniswap v4 with proper sqrt price
         uint160 sqrtPriceX96 = MathUtils.priceToSqrtPriceX96(INITIAL_PRICE);
-        poolManager.initialize(poolKey, sqrtPriceX96);
+        POOL_MANAGER.initialize(poolKey, sqrtPriceX96);
 
         proposals[decisionId][proposalId] = Proposal({
             id: proposalId,
             decisionId: decisionId,
-            poolAddress: address(poolManager),
+            poolAddress: address(POOL_MANAGER),
             poolKey: poolKey,
             metadata: metadata,
             totalTrades: 0,
@@ -182,7 +198,7 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
             isActive: true
         });
 
-        emit ProposalCreated(decisionId, proposalId, address(poolManager), poolKey, metadata);
+        emit ProposalCreated(decisionId, proposalId, address(POOL_MANAGER), poolKey, metadata);
     }
 
     /**
@@ -198,7 +214,7 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
         require(amount > 0, "QMFactory: amount must be greater than 0");
 
         // Transfer deposit token from user
-        depositToken.safeTransferFrom(msg.sender, address(this), amount);
+        DEPOSIT_TOKEN.safeTransferFrom(msg.sender, address(this), amount);
 
         // Issue 1:1 credits for deposits
         uint256 credits = amount;
@@ -235,11 +251,11 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
         require(proposal.isActive, "QMFactory: proposal not active");
 
         // Execute trade through the hook
-        uint256 tokensOut = quantumHook.executeQuantumTrade(proposal.poolKey, msg.sender, creditsIn, minTokensOut);
+        uint256 tokensOut = QUANTUM_HOOK.executeQuantumTrade(proposal.poolKey, msg.sender, creditsIn, minTokensOut);
 
         // Update proposal state
         proposal.totalTrades++;
-        proposal.currentPrice = quantumHook.getCurrentPrice(proposal.poolKey);
+        proposal.currentPrice = QUANTUM_HOOK.getCurrentPrice(proposal.poolKey);
 
         // Update user position
         position.usedCredits += creditsIn;
@@ -269,7 +285,7 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
             proposal.isActive = false;
 
             bool isWinner = (i == winningProposalId);
-            quantumHook.freezeProposalPool(proposal.poolKey, isWinner);
+            QUANTUM_HOOK.freezeProposalPool(proposal.poolKey, isWinner);
         }
 
         emit DecisionSettled(decisionId, winningProposalId, msg.sender, decision.totalDeposits);
@@ -308,7 +324,7 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
 
         // Transfer payout
         if (totalPayout > 0) {
-            depositToken.safeTransfer(msg.sender, totalPayout);
+            DEPOSIT_TOKEN.safeTransfer(msg.sender, totalPayout);
         }
     }
 
@@ -379,7 +395,7 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
      */
     function getCurrentProposalSupply(uint256 decisionId, uint256 proposalId) public view returns (uint256 supply) {
         Proposal storage proposal = proposals[decisionId][proposalId];
-        IQuantumHook.PoolMetadata memory metadata = quantumHook.getPoolMetadata(proposal.poolKey);
+        IQuantumHook.PoolMetadata memory metadata = QUANTUM_HOOK.getPoolMetadata(proposal.poolKey);
         return metadata.totalSupply;
     }
 
@@ -424,9 +440,9 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
         )
     {
         Proposal storage proposal = proposals[decisionId][proposalId];
-        IQuantumHook.PoolMetadata memory metadata = quantumHook.getPoolMetadata(proposal.poolKey);
+        IQuantumHook.PoolMetadata memory metadata = QUANTUM_HOOK.getPoolMetadata(proposal.poolKey);
 
-        (creditsReserve, tokensReserve) = quantumHook.getPoolReserves(proposal.poolKey);
+        (creditsReserve, tokensReserve) = QUANTUM_HOOK.getPoolReserves(proposal.poolKey);
 
         return (
             metadata.totalSupply,
@@ -450,6 +466,6 @@ contract QMFactory is IQMFactory, Ownable, ReentrancyGuard {
         returns (uint256 tokensOut)
     {
         Proposal storage proposal = proposals[decisionId][proposalId];
-        return quantumHook.calculateTokensOut(proposal.poolKey, creditsIn);
+        return QUANTUM_HOOK.calculateTokensOut(proposal.poolKey, creditsIn);
     }
 }

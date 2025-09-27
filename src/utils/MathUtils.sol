@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import "v4-core/libraries/FullMath.sol";
-import "v4-core/libraries/FixedPoint96.sol";
+import {FullMath} from "v4-core/libraries/FullMath.sol";
 
 /**
  * @title MathUtils
@@ -36,7 +35,7 @@ library MathUtils {
      * @return tokensOut Amount of tokens to receive
      */
     function calculateTokensOut(uint256 creditsIn, uint256 creditsReserve, uint256 tokensReserve)
-        internal
+        public
         pure
         returns (uint256 tokensOut)
     {
@@ -64,7 +63,7 @@ library MathUtils {
      * @return price Current price (credits per token)
      */
     function calculatePriceFromReserves(uint256 creditsReserve, uint256 tokensReserve)
-        internal
+        public
         pure
         returns (uint256 price)
     {
@@ -84,7 +83,7 @@ library MathUtils {
      * @param price Price in 18 decimal format
      * @return sqrtPriceX96 Sqrt price in X96 format
      */
-    function priceToSqrtPriceX96(uint256 price) internal pure returns (uint160 sqrtPriceX96) {
+    function priceToSqrtPriceX96(uint256 price) public pure returns (uint160 sqrtPriceX96) {
         // Calculate sqrt(price) * 2^96
         // price is in 18 decimals, so we need to adjust
 
@@ -104,7 +103,7 @@ library MathUtils {
      * @param sqrtPriceX96 Sqrt price in X96 format
      * @return price Price in 18 decimal format
      */
-    function sqrtPriceX96ToPrice(uint160 sqrtPriceX96) internal pure returns (uint256 price) {
+    function sqrtPriceX96ToPrice(uint160 sqrtPriceX96) public pure returns (uint256 price) {
         // Convert back from X96 format
         uint256 scaledPrice = FullMath.mulDiv(uint256(sqrtPriceX96), uint256(sqrtPriceX96), Q96);
         price = FullMath.mulDiv(scaledPrice, SCALE, Q96);
@@ -115,7 +114,7 @@ library MathUtils {
      * @param x Input value
      * @return result Square root of x
      */
-    function sqrt(uint256 x) internal pure returns (uint256 result) {
+    function sqrt(uint256 x) public pure returns (uint256 result) {
         if (x == 0) return 0;
 
         // Initial guess
@@ -137,7 +136,7 @@ library MathUtils {
      * @return isAcceptable Whether slippage is acceptable
      */
     function checkSlippage(uint256 expectedAmount, uint256 actualAmount, uint256 maxSlippageBps)
-        internal
+        public
         pure
         returns (bool isAcceptable)
     {
@@ -158,7 +157,7 @@ library MathUtils {
      * @return payout User's share of the payout
      */
     function calculatePayout(uint256 userTokens, uint256 totalWinningTokens, uint256 totalPayout)
-        internal
+        public
         pure
         returns (uint256 payout)
     {
@@ -178,7 +177,7 @@ library MathUtils {
      * @return refund Total refund amount
      */
     function calculateRefund(uint256 totalCredits, uint256 usedCredits, uint256 refundRate)
-        internal
+        public
         pure
         returns (uint256 refund)
     {
@@ -197,7 +196,7 @@ library MathUtils {
      * @return liquidity Amount of liquidity
      */
     function getLiquidityForAmounts(uint256 amount0, uint256 amount1, uint160 sqrtPriceX96)
-        internal
+        public
         pure
         returns (uint128 liquidity)
     {
@@ -214,57 +213,20 @@ library MathUtils {
     /**
      * @notice Safe addition that prevents overflow
      */
-    function safeAdd(uint256 a, uint256 b) internal pure returns (uint256) {
-        uint256 c = a + b;
-        if (c < a) revert MathUtils_Overflow();
-        return c;
+    function safeAdd(uint256 a, uint256 b) public pure returns (uint256) {
+        unchecked {
+            uint256 c = a + b;
+            if (c < a) revert MathUtils_Overflow();
+            return c;
+        }
     }
 
     /**
      * @notice Safe subtraction that prevents underflow
      */
-    function safeSub(uint256 a, uint256 b) internal pure returns (uint256) {
+    function safeSub(uint256 a, uint256 b) public pure returns (uint256) {
         if (b > a) revert MathUtils_Overflow();
         return a - b;
     }
 
-    // DEPRECATED FUNCTIONS - Remove these mock/simplified functions
-
-    /**
-     * @dev DEPRECATED: Use calculateTokensOut instead
-     */
-    function calculateLinearTokensOut(uint256 creditsIn, uint256 currentPrice)
-        internal
-        pure
-        returns (uint256 tokensOut)
-    {
-        // Redirect to real implementation
-        // This maintains backward compatibility while using real math
-        return FullMath.mulDiv(creditsIn, SCALE, currentPrice);
-    }
-
-    /**
-     * @dev DEPRECATED: Use calculateTokensOut instead
-     */
-    function calculateConstantProductTokensOut(uint256 creditsIn, uint256 creditsReserve, uint256 tokensReserve)
-        internal
-        pure
-        returns (uint256 tokensOut)
-    {
-        // Redirect to real implementation
-        return calculateTokensOut(creditsIn, creditsReserve, tokensReserve);
-    }
-
-    /**
-     * @dev DEPRECATED: Price impact is handled by AMM reserves
-     */
-    function calculateNewLinearPrice(
-        uint256 currentPrice,
-        uint256 tokensOut,
-        uint256 totalSupply,
-        uint256 priceImpactFactor
-    ) internal pure returns (uint256 newPrice) {
-        // This function is deprecated - price is now calculated from reserves
-        return currentPrice;
-    }
 }
