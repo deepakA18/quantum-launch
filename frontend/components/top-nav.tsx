@@ -43,12 +43,7 @@ export default function TopNav() {
             </span>
             <span className="flex flex-col -space-y-0.5 leading-none">
               <span className="space-grotesk-quantum text-base font-semibold tracking-tight">PropTrade</span>
-              <Badge
-                variant="outline"
-                className="w-fit border-primary/40 bg-primary/10 text-[10px] font-semibold uppercase tracking-[0.35em] text-primary"
-              >
-                Beta
-              </Badge>
+              
             </span>
           </Link>
 
@@ -79,11 +74,11 @@ export default function TopNav() {
           <div className="flex items-center gap-2">
             <Button
               asChild
-              className="hidden items-center gap-2 rounded-full bg-gradient-to-r from-primary via-primary/80 to-primary/60 px-4 py-2 text-sm font-semibold text-background shadow-[0_12px_30px_rgba(59,130,246,0.35)] transition hover:from-primary/90 hover:via-primary/80 hover:to-primary/70 md:inline-flex"
+              className="hidden items-center gap-2 rounded-full bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(0,0,0,0.35)] transition hover:from-gray-800 hover:via-gray-700 hover:to-gray-800 md:inline-flex"
             >
               <Link href="/proposals">
-                Launch app
-                <ArrowUpRight className="h-4 w-4" />
+              Launch app
+              <ArrowUpRight className="h-4 w-4" />
               </Link>
             </Button>
             <WalletConnectButton />
