@@ -44,9 +44,9 @@ contract DeployProductionScript is Script {
         console.log("1. Deploying PoolManager...");
         try new PoolManager(owner) returns (PoolManager _poolManager) {
             poolManager = _poolManager;
-            console.log("✅ PoolManager deployed at:", address(poolManager));
+            console.log("PoolManager deployed at:", address(poolManager));
         } catch Error(string memory reason) {
-            console.log("❌ PoolManager deployment failed:", reason);
+            console.log("PoolManager deployment failed:", reason);
             console.log("This is expected due to contract size limits");
             console.log("You need to use a pre-deployed PoolManager or alternative approach");
             vm.stopBroadcast();
@@ -56,7 +56,7 @@ contract DeployProductionScript is Script {
         // Step 2: Deploy QuantumHook
         console.log("2. Deploying QuantumHook...");
         hook = new QuantumHook(poolManager, owner);
-        console.log("✅ QuantumHook deployed at:", address(hook));
+        console.log("QuantumHook deployed at:", address(hook));
         
         // Step 3: Deploy QMFactory
         console.log("3. Deploying QMFactory...");
@@ -66,7 +66,7 @@ contract DeployProductionScript is Script {
             address(hook),
             owner
         );
-        console.log("✅ QMFactory deployed at:", address(factory));
+        console.log("QMFactory deployed at:", address(factory));
         
         vm.stopBroadcast();
         

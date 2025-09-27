@@ -1,0 +1,44 @@
+{
+  "network": "sepolia",
+  "chainId": 11155111,
+  "deploymentDate": "2024-09-27",
+  "owner": "0x5eE90eB846B5Bd55a14D8bA810F64986dc7D4e85",
+  "deployer": "0xED453da73eB0BE18A7277409E8B3E99662362c32",
+  "contracts": {
+    "PoolManager": {
+      "address": "0xE03A1074c86CFeDd5C142C4F04F1a1536e203543",
+      "abi": "PoolManager.json",
+      "type": "pre-deployed",
+      "description": "Uniswap v4 PoolManager contract",
+      "etherscan": "https://sepolia.etherscan.io/address/0xE03A1074c86CFeDd5C142C4F04F1a1536e203543"
+    },
+    "QuantumHook": {
+      "address": "0x15df43E9c4bc309a39227bBc6De5054Cb3DC0025",
+      "abi": "QuantumHook.json",
+      "type": "deployed",
+      "description": "Custom hook for quantum market logic",
+      "etherscan": "https://sepolia.etherscan.io/address/0x15df43E9c4bc309a39227bBc6De5054Cb3DC0025"
+    },
+    "QMFactory": {
+      "address": "0x6124f03F5D4B32a2163BA5E55C973ADC57E4e755",
+      "abi": "QMFactory.json",
+      "type": "deployed",
+      "description": "Main factory contract for creating decisions",
+      "etherscan": "https://sepolia.etherscan.io/address/0x6124f03F5D4B32a2163BA5E55C973ADC57E4e755"
+    },
+    "MathUtils": {
+      "address": "0xe557394ac7d7e414cdee58ba0984a782b4debc1e",
+      "abi": "MathUtils.json",
+      "type": "library",
+      "description": "Utility library for mathematical operations",
+      "etherscan": "https://sepolia.etherscan.io/address/0xe557394ac7d7e414cdee58ba0984a782b4debc1e"
+    },
+    "USDC": {
+      "address": "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
+      "abi": "external",
+      "type": "external",
+      "description": "Real USDC token on Sepolia",
+      "etherscan": "https://sepolia.etherscan.io/address/0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
+    }
+  }
+}
