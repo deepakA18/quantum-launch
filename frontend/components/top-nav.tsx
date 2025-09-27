@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Menu, Sparkles, ArrowUpRight } from "lucide-react"
 import { cn } from "@/lib/utils"
-import WalletConnectButton from "@/components/wallet-connect-button"
+import WalletConnectButton from "@/components/wallet-connect"
 
 export default function TopNav() {
   const pathname = usePathname()
