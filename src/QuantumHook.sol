@@ -12,11 +12,11 @@ import {Currency, CurrencyLibrary} from "v4-core/types/Currency.sol";
 import {CurrencySettler} from "../lib/v4-core/test/utils/CurrencySettler.sol";
 import {StateLibrary} from "v4-core/libraries/StateLibrary.sol";
 
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import "./interfaces/IQuantumHook.sol";
-import "./utils/MathUtils.sol";
+import {IQuantumHook} from "./interfaces/IQuantumHook.sol";
+import {MathUtils} from "./utils/MathUtils.sol";
 
 /**
  * @title QuantumHook
@@ -31,7 +31,7 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
     using MathUtils for uint256;
 
     /// @notice Pool manager instance
-    IPoolManager public immutable poolManager;
+    IPoolManager public immutable POOL_MANAGER;
 
     /// @notice Mapping from pool ID to pool metadata
     mapping(PoolId => PoolMetadata) public poolMetadata;
@@ -79,7 +79,7 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
     }
 
     constructor(IPoolManager _poolManager, address _initialOwner) Ownable(_initialOwner) {
-        poolManager = _poolManager;
+        POOL_MANAGER = _poolManager;
     }
 
     /**
@@ -188,10 +188,10 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
      * @notice Hook called before swaps - we intercept to implement quantum mechanics
      */
     function beforeSwap(
-        address sender,
+        address /* sender */,
         PoolKey calldata poolKey,
-        IPoolManager.SwapParams calldata params,
-        bytes calldata hookData
+        IPoolManager.SwapParams calldata /* params */,
+        bytes calldata /* hookData */
     ) external view override returns (bytes4, BeforeSwapDelta, uint24) {
         PoolId poolId = poolKey.toId();
         PoolMetadata storage metadata = poolMetadata[poolId];
@@ -209,11 +209,11 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
      * @notice Hook called after swaps - update our internal state
      */
     function afterSwap(
-        address sender,
-        PoolKey calldata poolKey,
-        IPoolManager.SwapParams calldata params,
-        BalanceDelta delta,
-        bytes calldata hookData
+        address /* sender */,
+        PoolKey calldata /* poolKey */,
+        IPoolManager.SwapParams calldata /* params */,
+        BalanceDelta /* delta */,
+        bytes calldata /* hookData */
     ) external pure override returns (bytes4, int128) {
         // Update our internal tracking after successful swaps
         return (BaseTestHooks.afterSwap.selector, 0);
@@ -289,7 +289,7 @@ contract QuantumHook is IQuantumHook, BaseTestHooks, Ownable, ReentrancyGuard {
         PoolId poolId = poolKey.toId();
 
         // Get current pool state
-        (uint160 sqrtPriceX96,,,) = poolManager.getSlot0(poolId);
+        (uint160 sqrtPriceX96,,,) = POOL_MANAGER.getSlot0(poolId);
 
         // Calculate liquidity amount
         uint128 liquidity =

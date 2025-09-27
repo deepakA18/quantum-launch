@@ -2,5 +2,20 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+remappings = [
+    "v4-core/=lib/v4-core/src/",
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
+    "forge-std/=lib/forge-std/src/"
+]
+
+# RPC URLs
+[rpc_endpoints]
+sepolia = "https://sepolia.infura.io/v3/3e896d6845f74757b25a5d2055ce227e"
+mainnet = "https://mainnet.infura.io/v3/3e896d6845f74757b25a5d2055ce227e"
+
+# Etherscan configuration
+[etherscan]
+sepolia = { key = "${ETHERSCAN_API_KEY}" }
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
